@@ -9,3 +9,5 @@ curl https://dns.kfd.me/www.google.com
 - [ ] docker-compose
 - [ ] metrics and debug
 - [ ] performance test
+- [ ] rate limit
+- [ ] hijack
