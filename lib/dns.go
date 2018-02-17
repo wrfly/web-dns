@@ -4,9 +4,17 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 
+	"github.com/sirupsen/logrus"
 	dns "golang.org/x/net/dns/dnsmessage"
 )
+
+var dnsBuf = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 2048)
+	},
+}
 
 func newName(name string) (dns.Name, error) {
 	n, err := dns.NewName(name)
@@ -58,7 +66,13 @@ func (a Answer) Error() error {
 	return a.err
 }
 
-func Question(domain, typ string) Answer {
+func (a Answer) Result() []Resp {
+	return a.result
+}
+
+func Question(dnsserver, domain, typ string) Answer {
+	logrus.Debugf("dns: %s, domain: %s, type: %s",
+		dnsserver, domain, typ)
 	if !strings.HasSuffix(domain, ".") {
 		domain += "."
 	}
@@ -80,96 +94,56 @@ func Question(domain, typ string) Answer {
 		return Answer{err: err}
 	}
 
-	u, err := net.Dial("udp", "8.8.8.8:53")
-	defer u.Close()
+	u, err := net.Dial("udp", dnsserver)
 	u.Write(buf)
-	got := make([]byte, 2048)
+	got := dnsBuf.Get().([]byte)
 	n, err := u.Read(got)
+	u.Close()
 	msg.Unpack(got[:n])
+	dnsBuf.Put(got)
 
 	result, err := parseMessage(msg)
 	if err != nil {
 		return Answer{err: err}
 	}
+	logrus.Debugf("got answer: %v", result)
 	return Answer{result: result}
 }
 
 func buildQueryMessage(name dns.Name, typ dns.Type) (msg dns.Message) {
 	msg = dns.Message{
-		Header: dns.Header{RecursionDesired: true},
-		Questions: []dns.Question{
-			{
-				Name:  name,
-				Type:  typ,
-				Class: dns.ClassINET,
-			},
-		},
+		Header:    dns.Header{RecursionDesired: true},
+		Questions: []dns.Question{{Name: name, Type: typ, Class: dns.ClassINET}},
 	}
 	return
 }
 
 func parseMessage(msg dns.Message) (resps []Resp, err error) {
-	buf, err := msg.Pack()
-	if err != nil {
-		return nil, err
-	}
-	var p dns.Parser
-	if _, err := p.Start(buf); err != nil {
-		return nil, err
-	}
-
-	// question first
-	for {
-		q, err := p.Question()
-		if err == dns.ErrSectionDone {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		if q.Name.String() != msg.Questions[0].Name.String() {
-			continue
-		}
-
-		if err := p.SkipAllQuestions(); err != nil {
-			return nil, err
-		}
-		break
-	}
-
 	resps = []Resp{}
-	// then parse answer
 	var ip string
-	for {
-		h, err := p.AnswerHeader()
-		if err == dns.ErrSectionDone {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		if !strings.EqualFold(h.Name.String(), msg.Questions[0].Name.String()) {
-			if err := p.SkipAnswer(); err != nil {
-				return nil, err
-			}
-			continue
-		}
-
+	for _, resource := range msg.Answers {
+		h := resource.Header
 		switch h.Type {
 		case dns.TypeA:
-			r, err := p.AResource()
-			if err != nil {
-				return nil, err
-			}
+			r := resource.Body.(*dns.AResource)
 			ip = net.IP(r.A[:]).String()
 		case dns.TypeAAAA:
-			r, err := p.AAAAResource()
-			if err != nil {
-				return nil, err
-			}
+			r := resource.Body.(*dns.AAAAResource)
 			ip = net.IP(r.AAAA[:]).String()
+		case dns.TypeMX:
+			r := resource.Body.(*dns.MXResource)
+			ip = r.MX.String()
+		case dns.TypeNS:
+			r := resource.Body.(*dns.NSResource)
+			ip = r.NS.String()
+		case dns.TypeTXT:
+			r := resource.Body.(*dns.TXTResource)
+			ip = r.Txt
+		case dns.TypeCNAME:
+			r := resource.Body.(*dns.CNAMEResource)
+			ip = r.CNAME.String()
+		default:
+			return nil, fmt.Errorf("unknown query type")
 		}
 		resps = append(resps, Resp{ip, h.TTL})
 	}

@@ -5,12 +5,40 @@ import (
 	"testing"
 )
 
-func TestQuery(t *testing.T) {
-	domain := "kfd.me"
-	ans := Question(domain, "A")
-	if ans.Error() != nil {
-		fmt.Println(ans.Error())
+func printAns(ans Answer) {
+	if err := ans.Error(); err != nil {
+		println(err)
 		return
 	}
-	fmt.Printf("%v\n", ans)
+	for _, ip := range ans.IPs() {
+		println(ip)
+	}
+}
+func TestQuery(t *testing.T) {
+	dnsserver := "114.114.114.114:53"
+	domain := "kfd.me"
+
+	typ := "A"
+	t.Run(fmt.Sprintf("%s %s", domain, typ), func(t *testing.T) {
+		ans := Question(dnsserver, domain, typ)
+		printAns(ans)
+	})
+
+	typ = "AAAA"
+	t.Run(fmt.Sprintf("%s %s", domain, typ), func(t *testing.T) {
+		ans := Question(dnsserver, domain, typ)
+		printAns(ans)
+	})
+
+	typ = "MX"
+	t.Run(fmt.Sprintf("%s %s", domain, typ), func(t *testing.T) {
+		ans := Question(dnsserver, domain, typ)
+		printAns(ans)
+	})
+
+	typ = "TXT"
+	t.Run(fmt.Sprintf("%s %s", domain, typ), func(t *testing.T) {
+		ans := Question(dnsserver, domain, typ)
+		printAns(ans)
+	})
 }
