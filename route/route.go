@@ -33,6 +33,7 @@ func blacklistHandler(blacklist []string) gin.HandlerFunc {
 }
 
 func New(digger dig.Digger, port int, blacklist []string) *Router {
+	logrus.Info("create new router")
 	engine := gin.New()
 	engine.Use(blacklistHandler(blacklist))
 
@@ -45,14 +46,61 @@ func New(digger dig.Digger, port int, blacklist []string) *Router {
 }
 
 func (r *Router) Serve() {
-	logrus.Debug("server starting")
-	r.e.Any("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
+	logrus.Info("start to serve")
+
+	r.e.GET("/:domain", func(c *gin.Context) {
+		domain := c.Param("domain")
+		logrus.Debugf("got domain: %s", domain)
+		if domain == "ping" {
+			c.String(200, "pong")
+			return
+		}
+		hosts, err := r.d.Dig(domain, "A")
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			c.Abort()
+		}
+		c.String(http.StatusOK, fmt.Sprintf("%s", hosts))
 	})
 
-	r.e.GET("/:host")
+	r.e.GET("/:domain/:type", func(c *gin.Context) {
+		domain := c.Param("domain")
+		typ := c.Param("type")
+		logrus.Debugf("got domain: %s type: %s", domain, typ)
+		if domain == "ping" {
+			c.String(200, "pong")
+			return
+		}
+
+		hosts, err := r.d.Dig(domain, typ)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			c.Abort()
+		}
+		c.String(http.StatusOK, fmt.Sprintf("%s", hosts))
+	})
+
+	// r.e.GET("/json/:domain", func(c *gin.Context) {
+	// 	hosts, err := r.d.Dig(c.Param("domain"), "A")
+	// 	if err != nil {
+	// 		c.JSON(http.StatusInternalServerError, gin.H{
+	// 			"err": err.Error(),
+	// 		})
+	// 		c.Abort()
+	// 	}
+	// 	c.JSON(http.StatusOK, hosts)
+	// })
+
+	// r.e.GET("/json/:domain/:type", func(c *gin.Context) {
+	// 	hosts, err := r.d.Dig(c.Param("domain"), c.Param("type"))
+	// 	if err != nil {
+	// 		c.JSON(http.StatusInternalServerError, gin.H{
+	// 			"err": err.Error(),
+	// 		})
+	// 		c.Abort()
+	// 	}
+	// 	c.JSON(http.StatusOK, hosts)
+	// })
 
 	r.e.Run(fmt.Sprintf(":%d", r.port)) // listen and serve
 }

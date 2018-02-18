@@ -3,6 +3,7 @@
 *.dll
 *.so
 *.dylib
+web-dns
 
 # Test binary, build with `go test -c`
 *.test

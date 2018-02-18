@@ -18,12 +18,14 @@ type Digger struct {
 }
 
 func New(cacher string, nsserver []string) Digger {
+	logrus.Info("create new digger")
 	return Digger{
 		nsserver: nsserver,
 	}
 }
 
 func (d Digger) Dig(domain, typ string) ([]string, error) {
+	logrus.Debugf("digger: %s %s", domain, typ)
 	first := make(chan []string, 1)
 	errChan := make(chan error, 1)
 	defer close(first)
