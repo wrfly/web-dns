@@ -1,7 +1,9 @@
 package dig
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -13,10 +15,11 @@ func TestDig(t *testing.T) {
 		"8.8.8.8:53",
 	}
 	domain := "kfd.me"
-	digger := New("mem", ns)
+	digger := New("mem", ns, time.Second)
+	ctx := context.Background()
 
 	t.Run("Type A of kfd.me", func(t *testing.T) {
-		ips, err := digger.Dig(domain, "A")
+		ips, err := digger.Dig(ctx, domain, "A")
 		if err != nil {
 			t.Error(err)
 		}
@@ -25,7 +28,7 @@ func TestDig(t *testing.T) {
 		}
 	})
 	t.Run("Type MX of kfd.me", func(t *testing.T) {
-		ips, err := digger.Dig(domain, "MX")
+		ips, err := digger.Dig(ctx, domain, "MX")
 		if err != nil {
 			t.Error(err)
 		}
@@ -34,7 +37,7 @@ func TestDig(t *testing.T) {
 		}
 	})
 	t.Run("Type X of kfd.me", func(t *testing.T) {
-		_, err := digger.Dig(domain, "X")
+		_, err := digger.Dig(ctx, domain, "X")
 		if err.Error() != "type not support" {
 			t.Error(err)
 		}

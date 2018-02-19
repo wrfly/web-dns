@@ -28,6 +28,7 @@ curl https://dns.kfd.me/www.google.com
 
 ## TODO
 
+- [x] it works
 - [x] dns lib
 - [ ] cacher
 - [ ] docker-compose

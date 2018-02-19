@@ -26,7 +26,7 @@ func blacklistHandler(blacklist []string) gin.HandlerFunc {
 		for _, blk := range blacklist {
 			if cip == blk {
 				c.String(http.StatusForbidden, "403")
-				c.Abort()
+				return
 			}
 		}
 	}
@@ -51,10 +51,10 @@ func (r *Router) stringResp(c *gin.Context, domain, typ string) {
 		return
 	}
 	logrus.Debugf("got domain: %s type: %s", domain, typ)
-	hosts, err := r.d.Dig(domain, typ)
+	hosts, err := r.d.Dig(c.Request.Context(), domain, typ)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
-		c.Abort()
+		return
 	}
 	if len(hosts) > 0 {
 		c.String(http.StatusOK, hosts[0])
@@ -65,7 +65,7 @@ func (r *Router) stringResp(c *gin.Context, domain, typ string) {
 
 func (r *Router) jsonResp(c *gin.Context, domain, typ string) {
 	logrus.Debugf("dig domain: %s type: %s", domain, typ)
-	answer := r.d.DigJson(domain, typ)
+	answer := r.d.DigJson(c.Request.Context(), domain, typ)
 	logrus.Debugf("got answer: %v", answer)
 	code := http.StatusOK
 	if answer.Err != nil {
