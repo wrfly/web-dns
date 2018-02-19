@@ -42,4 +42,19 @@ func TestDig(t *testing.T) {
 			t.Error(err)
 		}
 	})
+
+	t.Run("Json Type A of kfd.me", func(t *testing.T) {
+		r := digger.DigJson(ctx, domain, "A")
+		if r.Err != nil {
+			t.Error(r.Err)
+		}
+		t.Log(r)
+	})
+	t.Run("Json Type MX of kfd.me", func(t *testing.T) {
+		r := digger.DigJson(ctx, domain, "A")
+		if r.Err != nil {
+			t.Error(r.Err)
+		}
+		t.Log(r)
+	})
 }

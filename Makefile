@@ -3,7 +3,7 @@
 NAME := "web-dns"
 
 test:
-	go test `glide nv`
+	go test -cover -v `glide nv`
 
 build:
 	go build -o $(NAME) .
