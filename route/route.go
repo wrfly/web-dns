@@ -25,7 +25,7 @@ func blacklistHandler(blacklist []string) gin.HandlerFunc {
 		}
 		for _, blk := range blacklist {
 			if cip == blk {
-				c.String(http.StatusForbidden, "emm")
+				c.String(http.StatusForbidden, "403")
 				c.Abort()
 			}
 		}
@@ -45,62 +45,56 @@ func New(digger dig.Digger, port int, blacklist []string) *Router {
 	}
 }
 
+func (r *Router) stringResp(c *gin.Context, domain, typ string) {
+	if domain == "ping" {
+		c.String(200, "pong")
+		return
+	}
+	logrus.Debugf("got domain: %s type: %s", domain, typ)
+	hosts, err := r.d.Dig(domain, typ)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		c.Abort()
+	}
+	if len(hosts) > 0 {
+		c.String(http.StatusOK, hosts[0])
+	} else {
+		c.String(http.StatusOK, "0.0.0.0")
+	}
+}
+
+func (r *Router) jsonResp(c *gin.Context, domain, typ string) {
+	logrus.Debugf("dig domain: %s type: %s", domain, typ)
+	answer := r.d.DigJson(domain, typ)
+	logrus.Debugf("got answer: %v", answer)
+	code := http.StatusOK
+	if answer.Err != nil {
+		code = http.StatusInternalServerError
+	}
+	c.JSON(code, answer)
+}
+
 func (r *Router) Serve() {
 	logrus.Info("start to serve")
 
 	r.e.GET("/:domain", func(c *gin.Context) {
 		domain := c.Param("domain")
-		logrus.Debugf("got domain: %s", domain)
-		if domain == "ping" {
-			c.String(200, "pong")
-			return
-		}
-		hosts, err := r.d.Dig(domain, "A")
-		if err != nil {
-			c.String(http.StatusInternalServerError, err.Error())
-			c.Abort()
-		}
-		c.String(http.StatusOK, fmt.Sprintf("%s", hosts))
+		r.stringResp(c, domain, "A")
 	})
 
 	r.e.GET("/:domain/:type", func(c *gin.Context) {
 		domain := c.Param("domain")
 		typ := c.Param("type")
-		logrus.Debugf("got domain: %s type: %s", domain, typ)
-		if domain == "ping" {
-			c.String(200, "pong")
-			return
+		if typ != "json" {
+			r.stringResp(c, domain, typ)
+		} else { // json response
+			r.jsonResp(c, domain, "A")
 		}
-
-		hosts, err := r.d.Dig(domain, typ)
-		if err != nil {
-			c.String(http.StatusInternalServerError, err.Error())
-			c.Abort()
-		}
-		c.String(http.StatusOK, fmt.Sprintf("%s", hosts))
 	})
 
-	// r.e.GET("/json/:domain", func(c *gin.Context) {
-	// 	hosts, err := r.d.Dig(c.Param("domain"), "A")
-	// 	if err != nil {
-	// 		c.JSON(http.StatusInternalServerError, gin.H{
-	// 			"err": err.Error(),
-	// 		})
-	// 		c.Abort()
-	// 	}
-	// 	c.JSON(http.StatusOK, hosts)
-	// })
-
-	// r.e.GET("/json/:domain/:type", func(c *gin.Context) {
-	// 	hosts, err := r.d.Dig(c.Param("domain"), c.Param("type"))
-	// 	if err != nil {
-	// 		c.JSON(http.StatusInternalServerError, gin.H{
-	// 			"err": err.Error(),
-	// 		})
-	// 		c.Abort()
-	// 	}
-	// 	c.JSON(http.StatusOK, hosts)
-	// })
+	r.e.GET("/:domain/:type/json", func(c *gin.Context) {
+		r.jsonResp(c, c.Param("domain"), c.Param("type"))
+	})
 
 	r.e.Run(fmt.Sprintf(":%d", r.port)) // listen and serve
 }

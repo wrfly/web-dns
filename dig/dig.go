@@ -34,10 +34,13 @@ func (d Digger) Dig(domain, typ string) ([]string, error) {
 	for _, ns := range d.nsserver {
 		go func(ns string) {
 			defer func() {
-				recover()
+				x := recover()
+				if x != nil {
+					logrus.Errorf("got panic: %s", x)
+				}
 			}()
 			r := lib.Question(ns, domain, typ)
-			if err := r.Error(); err != nil {
+			if err := r.Err; err != nil {
 				errChan <- err
 				first <- nil
 			}
@@ -47,4 +50,27 @@ func (d Digger) Dig(domain, typ string) ([]string, error) {
 		}(ns)
 	}
 	return <-first, <-errChan
+}
+
+func (d Digger) DigJson(domain, typ string) lib.Answer {
+	logrus.Debugf("digger: %s %s", domain, typ)
+	first := make(chan lib.Answer, 1)
+	errChan := make(chan error, 1)
+	defer close(first)
+	defer close(errChan)
+
+	for _, ns := range d.nsserver {
+		go func(ns string) {
+			defer func() {
+				x := recover()
+				if x != nil {
+					logrus.Errorf("got panic: %s", x)
+				}
+			}()
+			r := lib.Question(ns, domain, typ)
+			logrus.Debugf("%s got ip of %s: %v", ns, domain, r.IPs())
+			first <- r
+		}(ns)
+	}
+	return <-first
 }
