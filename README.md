@@ -1,5 +1,8 @@
 # Web Dns
 
+[![Build Status](https://travis-ci.org/wrfly/web-dns.svg?branch=master)](https://travis-ci.org/wrfly/web-dns)
+
+
 curl https://dns.kfd.me/www.google.com
 
 ## API List
