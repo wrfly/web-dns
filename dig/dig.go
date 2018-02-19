@@ -1,6 +1,9 @@
 package dig
 
 import (
+	"context"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	_ "github.com/wrfly/web-dns/dig/cache"
 	"github.com/wrfly/web-dns/lib"
@@ -15,36 +18,46 @@ type Digger struct {
 	cacher    Cacher
 	nsserver  []string
 	blacklist []string
+	timeout   time.Duration
 }
 
-func New(cacher string, nsserver []string) Digger {
+func New(cacher string, nsserver []string, timeout time.Duration) Digger {
 	logrus.Info("create new digger")
 	return Digger{
 		nsserver: nsserver,
+		timeout:  timeout,
 	}
 }
 
-func (d Digger) Dig(domain, typ string) ([]string, error) {
+func (d Digger) Dig(ctext context.Context, domain, typ string) ([]string, error) {
+	answer := d.DigJson(ctext, domain, typ)
+	return answer.IPs(), answer.Err
+}
+
+func (d Digger) DigJson(ctext context.Context, domain, typ string) lib.Answer {
 	logrus.Debugf("digger: %s %s", domain, typ)
-	first := make(chan []string, 1)
-	errChan := make(chan error, 1)
+	first := make(chan lib.Answer, 1)
 	defer close(first)
-	defer close(errChan)
+
+	ctx, cancel := context.WithTimeout(ctext, d.timeout)
+	defer cancel()
 
 	for _, ns := range d.nsserver {
 		go func(ns string) {
 			defer func() {
-				recover()
+				x := recover()
+				if x != nil {
+					logrus.Errorf("got panic: %s", x)
+				}
 			}()
 			r := lib.Question(ns, domain, typ)
-			if err := r.Error(); err != nil {
-				errChan <- err
-				first <- nil
-			}
 			logrus.Debugf("%s got ip of %s: %v", ns, domain, r.IPs())
-			errChan <- nil
-			first <- r.IPs()
+			if ctx.Err() != nil {
+				logrus.Debug("abort answer")
+				return
+			}
+			first <- r
 		}(ns)
 	}
-	return <-first, <-errChan
+	return <-first
 }

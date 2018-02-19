@@ -6,7 +6,7 @@ import (
 )
 
 func printAns(ans Answer) {
-	if err := ans.Error(); err != nil {
+	if err := ans.Err; err != nil {
 		println(err)
 		return
 	}

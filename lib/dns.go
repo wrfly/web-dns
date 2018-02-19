@@ -45,29 +45,21 @@ func convertType(typ string) (dns.Type, error) {
 }
 
 type Resp struct {
-	IP  string
-	TTL uint32
+	IP  string `json:"ip"`
+	TTL uint32 `json:"ttl"`
 }
 
 type Answer struct {
-	result []Resp
-	err    error
+	Result []Resp `json:"result"`
+	Err    error  `json:"err"`
 }
 
 func (a Answer) IPs() []string {
 	ips := []string{}
-	for _, result := range a.result {
+	for _, result := range a.Result {
 		ips = append(ips, result.IP)
 	}
 	return ips
-}
-
-func (a Answer) Error() error {
-	return a.err
-}
-
-func (a Answer) Result() []Resp {
-	return a.result
 }
 
 func Question(dnsserver, domain, typ string) Answer {
@@ -80,18 +72,18 @@ func Question(dnsserver, domain, typ string) Answer {
 	// type and name
 	dnsType, err := convertType(typ)
 	if err != nil {
-		return Answer{err: err}
+		return Answer{Err: err}
 	}
 	dnsName, err := newName(domain)
 	if err != nil {
-		return Answer{err: err}
+		return Answer{Err: err}
 	}
 
 	// build query message
 	msg := buildQueryMessage(dnsName, dnsType)
 	buf, err := msg.Pack()
 	if err != nil {
-		return Answer{err: err}
+		return Answer{Err: err}
 	}
 
 	u, err := net.Dial("udp", dnsserver)
@@ -104,10 +96,10 @@ func Question(dnsserver, domain, typ string) Answer {
 
 	result, err := parseMessage(msg)
 	if err != nil {
-		return Answer{err: err}
+		return Answer{Err: err}
 	}
 	logrus.Debugf("got answer: %v", result)
-	return Answer{result: result}
+	return Answer{Result: result}
 }
 
 func buildQueryMessage(name dns.Name, typ dns.Type) (msg dns.Message) {

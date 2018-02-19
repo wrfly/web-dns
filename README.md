@@ -21,13 +21,14 @@ curl https://dns.kfd.me/www.google.com
 ### Reurn Json
 
 ```text
-/json/www.google.com
-/json/www.google.com/MX
-/json/www.google.com/AAAA
+/www.google.com/json
+/www.google.com/MX/json
+/www.google.com/AAAA/json
 ```
 
 ## TODO
 
+- [x] it works
 - [x] dns lib
 - [ ] cacher
 - [ ] docker-compose
