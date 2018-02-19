@@ -1,6 +1,7 @@
 package route
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -94,6 +95,20 @@ func (r *Router) Serve() {
 
 	r.e.GET("/:domain/:type/json", func(c *gin.Context) {
 		r.jsonResp(c, c.Param("domain"), c.Param("type"))
+	})
+
+	rs := r.e.Routes()
+	paths := []string{}
+	for _, ri := range rs {
+		paths = append(paths, ri.Path)
+	}
+	bs, _ := json.MarshalIndent(gin.H{
+		"Paths":  paths,
+		"Readme": "github.com/wrfly/web-dns",
+	}, "", "    ")
+	usage := fmt.Sprintf("%s", bs)
+	r.e.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, usage)
 	})
 
 	r.e.Run(fmt.Sprintf(":%d", r.port)) // listen and serve
