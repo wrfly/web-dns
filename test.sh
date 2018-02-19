@@ -14,6 +14,6 @@ ANY"
 for host in `echo "$HOST"`; do
     for typ in `echo "$TYPE"`; do
         cmd="curl -s $SERVER/$host/$typ"
-        echo $cmd
+        echo `$cmd`
     done
 done
