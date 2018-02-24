@@ -34,6 +34,9 @@ curl https://dns.kfd.me/www.google.com
 - [x] it works
 - [x] dns lib
 - [ ] cacher
+    - [x] mem
+    - [ ] redis
+    - [ ] blot
 - [ ] docker-compose
 - [ ] metrics and debug
 - [ ] performance test
