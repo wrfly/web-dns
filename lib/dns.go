@@ -5,6 +5,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	dns "golang.org/x/net/dns/dnsmessage"
@@ -51,6 +52,7 @@ type Resp struct {
 
 type Answer struct {
 	Result []Resp `json:"result"`
+	DigAt  int64  `json:"-"`
 	Err    error  `json:"err"`
 }
 
@@ -99,7 +101,7 @@ func Question(dnsserver, domain, typ string) Answer {
 		return Answer{Err: err}
 	}
 	logrus.Debugf("got answer: %v", result)
-	return Answer{Result: result}
+	return Answer{Result: result, DigAt: time.Now().Unix()}
 }
 
 func buildQueryMessage(name dns.Name, typ dns.Type) (msg dns.Message) {

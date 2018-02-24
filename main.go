@@ -39,7 +39,11 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	digger := dig.New("mem", conf.DNS, conf.Timeout)
+	digger, err := dig.New("mem", conf.DNS, conf.Timeout)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	r := route.New(digger, conf.Port, conf.BLK)
 	r.Serve()
 

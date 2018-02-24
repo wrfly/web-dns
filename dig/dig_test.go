@@ -15,7 +15,11 @@ func TestDig(t *testing.T) {
 		"8.8.8.8:53",
 	}
 	domain := "kfd.me"
-	digger := New("mem", ns, time.Second)
+	digger, err := New("mem", ns, time.Second)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	ctx := context.Background()
 
 	t.Run("Type A of kfd.me", func(t *testing.T) {

@@ -5,28 +5,28 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	_ "github.com/wrfly/web-dns/dig/cache"
+	"github.com/wrfly/web-dns/dig/cache"
 	"github.com/wrfly/web-dns/lib"
 )
 
-type Cacher interface {
-	Set(domain string, ttl int) error
-	Get(domain string) error
-}
-
 type Digger struct {
-	cacher    Cacher
+	cacher    cache.Cacher
 	nsserver  []string
 	blacklist []string
 	timeout   time.Duration
 }
 
-func New(cacher string, nsserver []string, timeout time.Duration) Digger {
+func New(cacheTyp string, nsserver []string, timeout time.Duration) (Digger, error) {
 	logrus.Info("create new digger")
+	c, err := cache.New(cacheTyp)
+	if err != nil {
+		return Digger{}, err
+	}
 	return Digger{
+		cacher:   c,
 		nsserver: nsserver,
 		timeout:  timeout,
-	}
+	}, nil
 }
 
 func (d Digger) Dig(ctext context.Context, domain, typ string) ([]string, error) {
@@ -34,8 +34,24 @@ func (d Digger) Dig(ctext context.Context, domain, typ string) ([]string, error)
 	return answer.IPs(), answer.Err
 }
 
-func (d Digger) DigJson(ctext context.Context, domain, typ string) lib.Answer {
+func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answer) {
 	logrus.Debugf("digger: %s %s", domain, typ)
+	var err error
+	if ans, err = d.cacher.Get(ctext, domain, typ); err == nil {
+		x := uint32(time.Now().Unix() - ans.DigAt)
+		logrus.Debugf("x=%d", x)
+		for i := range ans.Result {
+			if ans.Result[i].TTL >= x {
+				ans.Result[i].TTL -= x
+			} else {
+				goto digNewInfo
+			}
+		}
+		logrus.Debugf("return answer: %v", ans)
+		return ans
+	}
+
+digNewInfo:
 	first := make(chan lib.Answer, 1)
 	defer close(first)
 
@@ -59,5 +75,9 @@ func (d Digger) DigJson(ctext context.Context, domain, typ string) lib.Answer {
 			first <- r
 		}(ns)
 	}
-	return <-first
+
+	ans = <-first
+	d.cacher.Set(ctext, domain, typ, ans)
+
+	return ans
 }
