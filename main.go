@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/wrfly/web-dns/config"
 	"github.com/wrfly/web-dns/dig"
+	"github.com/wrfly/web-dns/dig/cache"
 	"github.com/wrfly/web-dns/route"
 )
 
@@ -26,6 +27,8 @@ func main() {
 	flag.StringVar(&blackStringList, "blacklist", "8.8.8.8", "black list of clients")
 	flag.BoolVar(&debug, "d", false, "debug switch")
 	flag.IntVar(&timeOut, "t", 100, "dig timeout (millisecond)")
+	flag.StringVar(&conf.CacheType, "cache", "mem", "cache type: mem|redis|bolt")
+	flag.StringVar(&conf.RedisAddr, "redis", "localhost:6379", "this flag is used for redis cacher")
 	flag.Parse()
 
 	conf.DNS = strings.Split(dnsStringList, ",")
@@ -39,7 +42,12 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	digger, err := dig.New("mem", conf.DNS, conf.Timeout)
+	// create cacher
+	c, err := cache.New(conf.CacheType, conf.RedisAddr)
+	if err != nil {
+		logrus.Fatalf("create cacher error: %s", err)
+	}
+	digger, err := dig.New(conf.DNS, conf.Timeout, c)
 	if err != nil {
 		logrus.Fatal(err)
 	}

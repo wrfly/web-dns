@@ -9,6 +9,7 @@ type Config struct {
 	DNS       []string
 	BLK       []string // black list
 	CacheType string
+	RedisAddr string
 	Limit     bool
 	Rate      int
 	Timeout   time.Duration

@@ -1,5 +1,5 @@
 hash: 06223c614b5334e21b20ac6b0df113702818c3b17c59d3db1980240e09dc90d6
-updated: 2018-02-19T08:08:35.867382148Z
+updated: 2018-02-27T16:10:59.778163544Z
 imports:
 - name: github.com/gin-contrib/sse
   version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
@@ -8,6 +8,16 @@ imports:
   subpackages:
   - binding
   - render
+- name: github.com/go-redis/redis
+  version: 68362cfda1eeb3a69316e7bc00169a9a8de4823a
+  subpackages:
+  - internal
+  - internal/consistenthash
+  - internal/hashtag
+  - internal/pool
+  - internal/proto
+  - internal/singleflight
+  - internal/util
 - name: github.com/golang/protobuf
   version: bbd03ef6da3a115852eaf24c8a1c46aeb39aa175
   subpackages:
@@ -17,11 +27,11 @@ imports:
 - name: github.com/sirupsen/logrus
   version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
 - name: github.com/ugorji/go
-  version: b5b949564861e43a03568a0b134c135cf318e5c8
+  version: 16f09ef744fd4227190f626f14cfdefb14362b3b
   subpackages:
   - codec
 - name: golang.org/x/crypto
-  version: 650f4a345ab4e5b245a3034b110ebc7299e68186
+  version: 8c653846df49742c4c85ec37e5d9f8d3ba657895
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
@@ -29,12 +39,12 @@ imports:
   subpackages:
   - dns/dnsmessage
 - name: golang.org/x/sys
-  version: 37707fdb30a5b38865cfb95e5aab41707daec7fd
+  version: f6cff0780e542efa0c8e864dc8fa522808f6a598
   subpackages:
   - unix
   - windows
 - name: gopkg.in/go-playground/validator.v8
   version: 5f1438d3fca68893a817e4a66806cea46a9e4ebf
 - name: gopkg.in/yaml.v2
-  version: d670f9405373e636a5a2765eea47fac0c9bc91a4
+  version: 7f97868eec74b32b0982dd158a51a446d1da7eb5
 testImports: []

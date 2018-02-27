@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -63,7 +64,10 @@ func (a Answer) IPs() []string {
 	}
 	return ips
 }
-
+func (a Answer) Marshal() []byte {
+	bs, _ := json.Marshal(a)
+	return bs
+}
 func Question(dnsserver, domain, typ string) Answer {
 	logrus.Debugf("dns: %s, domain: %s, type: %s",
 		dnsserver, domain, typ)

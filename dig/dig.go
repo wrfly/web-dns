@@ -16,14 +16,10 @@ type Digger struct {
 	timeout   time.Duration
 }
 
-func New(cacheTyp string, nsserver []string, timeout time.Duration) (Digger, error) {
+func New(nsserver []string, timeout time.Duration, cacher cache.Cacher) (Digger, error) {
 	logrus.Info("create new digger")
-	c, err := cache.New(cacheTyp)
-	if err != nil {
-		return Digger{}, err
-	}
 	return Digger{
-		cacher:   c,
+		cacher:   cacher,
 		nsserver: nsserver,
 		timeout:  timeout,
 	}, nil
@@ -37,21 +33,11 @@ func (d Digger) Dig(ctext context.Context, domain, typ string) ([]string, error)
 func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answer) {
 	logrus.Debugf("digger: %s %s", domain, typ)
 	var err error
-	if ans, err = d.cacher.Get(ctext, domain, typ); err == nil {
-		x := uint32(time.Now().Unix() - ans.DigAt)
-		logrus.Debugf("x=%d", x)
-		for i := range ans.Result {
-			if ans.Result[i].TTL >= x {
-				ans.Result[i].TTL -= x
-			} else {
-				goto digNewInfo
-			}
-		}
+	if ans, err = d.cacher.Get(domain, typ); err == nil {
 		logrus.Debugf("return answer: %v", ans)
 		return ans
 	}
 
-digNewInfo:
 	first := make(chan lib.Answer, 1)
 	defer close(first)
 
@@ -77,7 +63,9 @@ digNewInfo:
 	}
 
 	ans = <-first
-	d.cacher.Set(ctext, domain, typ, ans)
+	if err := d.cacher.Set(domain, typ, ans); err != nil {
+		logrus.Errorf("set cache error: %s", err)
+	}
 
 	return ans
 }

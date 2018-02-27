@@ -35,7 +35,7 @@ curl https://dns.kfd.me/www.google.com
 - [x] dns lib
 - [ ] cacher
     - [x] mem
-    - [ ] redis
+    - [x] redis
     - [ ] blot
 - [ ] docker-compose
 - [ ] metrics and debug

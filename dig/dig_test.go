@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/wrfly/web-dns/dig/cache"
 )
 
 func TestDig(t *testing.T) {
@@ -15,7 +16,8 @@ func TestDig(t *testing.T) {
 		"8.8.8.8:53",
 	}
 	domain := "kfd.me"
-	digger, err := New("mem", ns, time.Second)
+	c, _ := cache.New("mem", "")
+	digger, err := New(ns, time.Second, c)
 	if err != nil {
 		t.Error(err)
 		return
