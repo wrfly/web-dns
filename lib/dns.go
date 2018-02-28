@@ -53,7 +53,7 @@ type Resp struct {
 
 type Answer struct {
 	Result []Resp `json:"result"`
-	DigAt  int64  `json:"-"`
+	DigAt  int64  `json:"dig"`
 	Err    error  `json:"err"`
 }
 
@@ -64,10 +64,12 @@ func (a Answer) IPs() []string {
 	}
 	return ips
 }
+
 func (a Answer) Marshal() []byte {
 	bs, _ := json.Marshal(a)
 	return bs
 }
+
 func Question(dnsserver, domain, typ string) Answer {
 	logrus.Debugf("dns: %s, domain: %s, type: %s",
 		dnsserver, domain, typ)

@@ -36,6 +36,8 @@ func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answ
 	if ans, err = d.cacher.Get(domain, typ); err == nil {
 		logrus.Debugf("return answer: %v", ans)
 		return ans
+	} else {
+		logrus.Debugf("cacher error: %s", err)
 	}
 
 	first := make(chan lib.Answer, 1)

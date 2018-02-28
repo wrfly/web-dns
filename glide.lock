@@ -1,6 +1,8 @@
 hash: 06223c614b5334e21b20ac6b0df113702818c3b17c59d3db1980240e09dc90d6
-updated: 2018-02-27T16:10:59.778163544Z
+updated: 2018-02-28T15:21:08.004679799Z
 imports:
+- name: github.com/boltdb/bolt
+  version: 9da31745363232bc1e27dbab3569e77383a51585
 - name: github.com/gin-contrib/sse
   version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
 - name: github.com/gin-gonic/gin
@@ -9,7 +11,7 @@ imports:
   - binding
   - render
 - name: github.com/go-redis/redis
-  version: 68362cfda1eeb3a69316e7bc00169a9a8de4823a
+  version: 55c9929dbaa1362cf9af13fab0f46bf8fde8fe84
   subpackages:
   - internal
   - internal/consistenthash

@@ -37,3 +37,7 @@ func (c *redisCacher) Get(domain, typ string) (lib.Answer, error) {
 	logrus.Debugf("redis get: %v", ans)
 	return ans, nil
 }
+
+func (c *redisCacher) Close() error {
+	return c.cli.Close()
+}

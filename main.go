@@ -47,6 +47,8 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("create cacher error: %s", err)
 	}
+	defer c.Close()
+
 	digger, err := dig.New(conf.DNS, conf.Timeout, c)
 	if err != nil {
 		logrus.Fatal(err)

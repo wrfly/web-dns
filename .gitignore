@@ -17,3 +17,5 @@ web-dns
 # vscode and debug
 .vscode
 *.test
+
+dns.db

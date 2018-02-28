@@ -31,6 +31,7 @@ func (c *memCacher) Get(domain, typ string) (lib.Answer, error) {
 	defer c.m.RUnlock()
 	key := cacheKey(domain, typ)
 	if ansGot, got := c.storage[key]; got {
+		// TODO: ugly here
 		ans := lib.Answer{
 			Result: make([]lib.Resp, len(ansGot.Result)),
 		}
@@ -49,4 +50,8 @@ func (c *memCacher) Get(domain, typ string) (lib.Answer, error) {
 		return ans, nil
 	}
 	return lib.Answer{}, fmt.Errorf("404")
+}
+
+func (c *memCacher) Close() error {
+	return nil
 }

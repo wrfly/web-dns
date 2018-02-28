@@ -72,7 +72,7 @@ func (r *Router) jsonResp(c *gin.Context, domain, typ string) {
 	if answer.Err != nil {
 		code = http.StatusInternalServerError
 	}
-	c.JSON(code, answer)
+	c.JSON(code, answer.Result)
 }
 
 func (r *Router) Serve() {

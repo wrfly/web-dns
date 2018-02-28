@@ -2,7 +2,9 @@ package cache
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/boltdb/bolt"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/wrfly/web-dns/lib"
@@ -18,6 +20,7 @@ const (
 type Cacher interface {
 	Set(domain, typ string, ans lib.Answer) error
 	Get(domain, typ string) (lib.Answer, error)
+	Close() error
 }
 
 func cacheKey(domain, typ string) string {
@@ -42,6 +45,23 @@ func New(cacheTyp string, addr ...string) (Cacher, error) {
 			return nil, err
 		}
 		return &redisCacher{cli: client}, nil
+	case BoltCache:
+		dbPath := "dns.db"
+		os.Remove(dbPath)
+		db, err := bolt.Open(dbPath, 0600, nil)
+		if err != nil {
+			return nil, err
+		}
+		if err := db.Update(func(tx *bolt.Tx) error {
+			_, err := tx.CreateBucket([]byte("dns"))
+			if err != nil {
+				return fmt.Errorf("create bucket: %s", err)
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+		return &boltDBCacher{dbPath: dbPath, db: db, bktName: []byte("dns")}, nil
 	default:
 		return nil, fmt.Errorf("cache type [%s] not support", cacheTyp)
 	}
