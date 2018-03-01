@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -57,4 +59,12 @@ func main() {
 	r := route.New(digger, conf.Port, conf.BLK)
 	r.Serve()
 
+	sigChan := make(chan os.Signal)
+
+	signal.Notify(sigChan, os.Interrupt)
+
+	<-sigChan
+	logrus.Info("quit")
+
+	return
 }

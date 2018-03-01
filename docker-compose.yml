@@ -1,0 +1,7 @@
+version: "3"
+services:
+  web-dns:
+    image: wrfly/web-dns:latest
+    command: web-dns
+    ports:
+      - 8080:8080
