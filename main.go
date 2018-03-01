@@ -29,6 +29,7 @@ func main() {
 	flag.StringVar(&blackStringList, "blacklist", "8.8.8.8", "black list of clients")
 	flag.BoolVar(&debug, "d", false, "debug switch")
 	flag.IntVar(&timeOut, "t", 100, "dig timeout (millisecond)")
+	flag.IntVar(&conf.Rate, "r", 1000, "rate of requests per minute per IP")
 	flag.StringVar(&conf.CacheType, "cache", "mem", "cache type: mem|redis|bolt")
 	flag.StringVar(&conf.RedisAddr, "redis", "localhost:6379", "this flag is used for redis cacher")
 	flag.Parse()
@@ -56,7 +57,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	r := route.New(digger, conf.Port, conf.BLK)
+	r := route.New(digger, conf.Port, conf.BLK, conf.Rate)
 	r.Serve()
 
 	sigChan := make(chan os.Signal)

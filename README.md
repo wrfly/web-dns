@@ -37,9 +37,8 @@ curl https://dns.kfd.me/www.google.com
     - [x] mem
     - [x] redis
     - [x] blot
-- [ ] docker-compose
 - [ ] metrics and debug
 - [ ] performance test
-- [ ] rate limit
+- [x] rate limit(per IP)
 - [ ] hijack
 - [x] api list

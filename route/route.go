@@ -18,25 +18,11 @@ type Router struct {
 	e         *gin.Engine
 }
 
-func blacklistHandler(blacklist []string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		cip := c.GetHeader("X-Forwarded-For")
-		if cip == "" {
-			cip = c.ClientIP()
-		}
-		for _, blk := range blacklist {
-			if cip == blk {
-				c.String(http.StatusForbidden, "403")
-				return
-			}
-		}
-	}
-}
-
-func New(digger dig.Digger, port int, blacklist []string) *Router {
+func New(digger dig.Digger, port int, blacklist []string, rate int) *Router {
 	logrus.Info("create new router")
 	engine := gin.New()
 	engine.Use(blacklistHandler(blacklist))
+	engine.Use(ratelimitHandler(rate))
 
 	return &Router{
 		port:      port,
