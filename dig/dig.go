@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/wrfly/web-dns/config"
 	"github.com/wrfly/web-dns/dig/cache"
 	"github.com/wrfly/web-dns/lib"
 )
@@ -16,12 +17,12 @@ type Digger struct {
 	timeout   time.Duration
 }
 
-func New(nsserver []string, timeout time.Duration, cacher cache.Cacher) (Digger, error) {
+func New(conf config.DiggerConfig, cacher cache.Cacher) (Digger, error) {
 	logrus.Info("create new digger")
 	return Digger{
 		cacher:   cacher,
-		nsserver: nsserver,
-		timeout:  timeout,
+		nsserver: conf.DNS,
+		timeout:  conf.Timeout,
 	}, nil
 }
 

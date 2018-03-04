@@ -7,6 +7,8 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
+
+	"github.com/wrfly/web-dns/config"
 	"github.com/wrfly/web-dns/lib"
 )
 
@@ -26,9 +28,9 @@ type Cacher interface {
 func cacheKey(domain, typ string) string {
 	return fmt.Sprintf("%s-%s", domain, typ)
 }
-func New(cacheTyp string, addr ...string) (Cacher, error) {
-	logrus.Debugf("new cacher: %s", cacheTyp)
-	switch cacheTyp {
+func New(conf config.CacherConfig) (Cacher, error) {
+	logrus.Debugf("new cacher: %s", conf.CacheType)
+	switch conf.CacheType {
 	case MemCache:
 		return &memCacher{
 			n:       MemCache,
@@ -36,7 +38,7 @@ func New(cacheTyp string, addr ...string) (Cacher, error) {
 		}, nil
 	case RedisCache:
 		client := redis.NewClient(&redis.Options{
-			Addr:     addr[0],
+			Addr:     conf.RedisAddr,
 			Password: "", // no password set
 			DB:       0,  // use default DB
 		})
@@ -63,6 +65,6 @@ func New(cacheTyp string, addr ...string) (Cacher, error) {
 		}
 		return &boltDBCacher{dbPath: dbPath, db: db, bktName: []byte("dns")}, nil
 	default:
-		return nil, fmt.Errorf("cache type [%s] not support", cacheTyp)
+		return nil, fmt.Errorf("cache type [%s] not support", conf.CacheType)
 	}
 }

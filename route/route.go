@@ -8,25 +8,28 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
+	"github.com/wrfly/web-dns/config"
 	"github.com/wrfly/web-dns/dig"
 )
 
 type Router struct {
 	port      int
+	debugPort int
 	blacklist []string
 	d         dig.Digger
 	e         *gin.Engine
 }
 
-func New(digger dig.Digger, port int, blacklist []string, rate int) *Router {
+func New(digger dig.Digger, conf config.ServerConfig) *Router {
 	logrus.Info("create new router")
 	engine := gin.New()
-	engine.Use(blacklistHandler(blacklist))
-	engine.Use(ratelimitHandler(rate))
+	engine.Use(blacklistHandler(conf.BLK))
+	engine.Use(ratelimitHandler(conf.Rate))
 
 	return &Router{
-		port:      port,
-		blacklist: blacklist,
+		port:      conf.Port,
+		debugPort: conf.DebugPort,
+		blacklist: conf.BLK,
 		d:         digger,
 		e:         engine,
 	}

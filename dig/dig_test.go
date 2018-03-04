@@ -6,18 +6,22 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/wrfly/web-dns/config"
 	"github.com/wrfly/web-dns/dig/cache"
 )
 
 func TestDig(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
-	ns := []string{
-		"114.114.114.114:53",
-		"8.8.8.8:53",
+	conf := config.DiggerConfig{
+		DNS: []string{
+			"114.114.114.114:53",
+			"8.8.8.8:53",
+		},
+		Timeout: time.Second,
 	}
 	domain := "kfd.me"
-	c, _ := cache.New("mem", "")
-	digger, err := New(ns, time.Second, c)
+	cacher, _ := cache.New(config.CacherConfig{CacheType: "mem"})
+	digger, err := New(conf, cacher)
 	if err != nil {
 		t.Error(err)
 		return

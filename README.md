@@ -37,7 +37,7 @@ curl https://dns.kfd.me/www.google.com
     - [x] mem
     - [x] redis
     - [x] blot
-- [ ] metrics and debug
+- [x] metrics and debug
 - [ ] performance test
 - [x] rate limit(per IP)
 - [ ] hijack
