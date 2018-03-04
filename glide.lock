@@ -1,8 +1,14 @@
 hash: 06223c614b5334e21b20ac6b0df113702818c3b17c59d3db1980240e09dc90d6
-updated: 2018-02-28T15:21:08.004679799Z
+updated: 2018-03-04T15:24:18.566454494Z
 imports:
+- name: github.com/beorn7/perks
+  version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
+  subpackages:
+  - quantile
 - name: github.com/boltdb/bolt
-  version: 9da31745363232bc1e27dbab3569e77383a51585
+  version: fd01fc79c553a8e99d512a07e8e0c63d4a3ccfc5
+- name: github.com/bsm/ratelimit
+  version: 4a38dca83ebadb017e83301642fab61b1c17edb7
 - name: github.com/gin-contrib/sse
   version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
 - name: github.com/gin-gonic/gin
@@ -11,7 +17,7 @@ imports:
   - binding
   - render
 - name: github.com/go-redis/redis
-  version: 55c9929dbaa1362cf9af13fab0f46bf8fde8fe84
+  version: d0a2b8bdf3d0104a8d766370a6af5b7697d93f25
   subpackages:
   - internal
   - internal/consistenthash
@@ -26,6 +32,30 @@ imports:
   - proto
 - name: github.com/mattn/go-isatty
   version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
+  subpackages:
+  - pbutil
+- name: github.com/prometheus/client_golang
+  version: c3324c1198cf3374996e9d3098edd46a6b55afc9
+  subpackages:
+  - prometheus
+- name: github.com/prometheus/client_model
+  version: 99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c
+  subpackages:
+  - go
+- name: github.com/prometheus/common
+  version: 6fb6fce6f8b75884b92e1889c150403fc0872c5e
+  subpackages:
+  - expfmt
+  - internal/bitbucket.org/ww/goautoneg
+  - model
+- name: github.com/prometheus/procfs
+  version: d274e363d5759d1c916232217be421f1cc89c5fe
+  subpackages:
+  - internal/util
+  - nfs
+  - xfs
 - name: github.com/sirupsen/logrus
   version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
 - name: github.com/ugorji/go
@@ -33,15 +63,15 @@ imports:
   subpackages:
   - codec
 - name: golang.org/x/crypto
-  version: 8c653846df49742c4c85ec37e5d9f8d3ba657895
+  version: 91a49db82a88618983a78a06c1cbd4e00ab749ab
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
-  version: cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb
+  version: 22ae77b79946ea320088417e4d50825671d82d57
   subpackages:
   - dns/dnsmessage
 - name: golang.org/x/sys
-  version: f6cff0780e542efa0c8e864dc8fa522808f6a598
+  version: dd2ff4accc098aceecb86b36eaa7829b2a17b1c9
   subpackages:
   - unix
   - windows

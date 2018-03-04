@@ -23,12 +23,12 @@ var tbs = rateLimiter{
 
 func blacklistHandler(blacklist []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		cip := c.GetHeader("X-Forwarded-For")
-		if cip == "" {
-			cip = c.ClientIP()
+		clientIP := c.GetHeader("X-Forwarded-For")
+		if clientIP == "" {
+			clientIP = c.ClientIP()
 		}
 		for _, blk := range blacklist {
-			if cip == blk {
+			if clientIP == blk {
 				c.String(http.StatusForbidden, "403: blacklist")
 				return
 			}
@@ -38,26 +38,36 @@ func blacklistHandler(blacklist []string) gin.HandlerFunc {
 
 func ratelimitHandler(rate int) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		cip := c.GetHeader("X-Forwarded-For")
-		if cip == "" {
-			cip = c.ClientIP()
+		clientIP := c.GetHeader("X-Forwarded-For")
+		if clientIP == "" {
+			clientIP = c.ClientIP()
 		}
 		// a client can only query once at one time
-		if _, exist := tbs.mC[cip]; !exist {
-			tbs.mC[cip] = &sync.Mutex{}
+		if _, exist := tbs.mC[clientIP]; !exist {
+			tbs.mC[clientIP] = &sync.Mutex{}
 			// client rate limit
-			tbs.tb[cip] = ratelimit.New(rate, time.Minute)
-			tbs.tbStartAt[cip] = time.Now().Second() + 60
+			tbs.tb[clientIP] = ratelimit.New(rate, time.Minute)
+			tbs.tbStartAt[clientIP] = time.Now().Second() + 60
 		}
-		tbs.mC[cip].Lock()
-		defer tbs.mC[cip].Unlock()
+		tbs.mC[clientIP].Lock()
+		defer tbs.mC[clientIP].Unlock()
 
-		if tbs.tb[cip].Limit() {
-			tbStartAt := tbs.tbStartAt[cip]
+		if tbs.tb[clientIP].Limit() {
+			tbStartAt := tbs.tbStartAt[clientIP]
 			c.String(http.StatusForbidden, "403: ratelimit, try again in %vs\n",
 				tbStartAt-time.Now().Second())
 			c.Abort()
 		}
 		return
+	}
+}
+
+func metricsHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		clientIP := c.GetHeader("X-Forwarded-For")
+		if clientIP == "" {
+			clientIP = c.ClientIP()
+		}
+		clientCounter.WithLabelValues(clientIP).Add(1)
 	}
 }

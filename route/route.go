@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
 	"github.com/wrfly/web-dns/config"
@@ -15,6 +17,7 @@ import (
 type Router struct {
 	port      int
 	debugPort int
+	debug     bool
 	blacklist []string
 	d         dig.Digger
 	e         *gin.Engine
@@ -26,10 +29,19 @@ func New(digger dig.Digger, conf config.ServerConfig) *Router {
 	engine.Use(blacklistHandler(conf.BLK))
 	engine.Use(ratelimitHandler(conf.Rate))
 
+	debug := false
+	if conf.DebugPort > 0 {
+		debug = true
+		registerPrometheus()
+		engine.Use(metricsHandler())
+		go serveMetricsAndDebug(conf.DebugPort)
+	}
+
 	return &Router{
 		port:      conf.Port,
 		debugPort: conf.DebugPort,
 		blacklist: conf.BLK,
+		debug:     debug,
 		d:         digger,
 		e:         engine,
 	}
@@ -40,6 +52,10 @@ func (r *Router) stringResp(c *gin.Context, domain, typ string) {
 		c.String(200, "pong")
 		return
 	}
+	if r.debug {
+		domainCounter.WithLabelValues(domain, typ).Add(1)
+	}
+
 	logrus.Debugf("got domain: %s type: %s", domain, typ)
 	hosts, err := r.d.Dig(c.Request.Context(), domain, typ)
 	if err != nil {
@@ -101,4 +117,17 @@ func (r *Router) Serve() {
 	})
 
 	r.e.Run(fmt.Sprintf(":%d", r.port)) // listen and serve
+}
+
+func serveMetricsAndDebug(debugPort int) {
+	logrus.Info("start to serve metrics and debug")
+	s := http.NewServeMux()
+	s.Handle("/metrics", prometheus.Handler())
+	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		pprof.Index(w, r)
+	})
+
+	addr := fmt.Sprintf("127.0.0.1:%d", debugPort)
+	http.ListenAndServe(addr, s)
+
 }

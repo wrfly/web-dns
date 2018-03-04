@@ -25,6 +25,7 @@ var (
 func main() {
 	conf := config.New()
 	flag.IntVar(&conf.Server.Port, "port", 8080, "server port to listen")
+	flag.IntVar(&conf.Server.DebugPort, "debugport", 8081, "server debug port to listen")
 	flag.StringVar(&dnsStringList, "dns", "8.8.8.8:53,8.8.4.4:53", "dns server")
 	flag.StringVar(&blackStringList, "blacklist", "8.8.8.8", "black list of clients")
 	flag.BoolVar(&conf.Debug, "d", false, "debug switch")
