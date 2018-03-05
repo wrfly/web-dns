@@ -79,4 +79,6 @@ imports:
   version: 5f1438d3fca68893a817e4a66806cea46a9e4ebf
 - name: gopkg.in/yaml.v2
   version: 7f97868eec74b32b0982dd158a51a446d1da7eb5
+- name: gopkg.in/urfave/cli.v2
+  version: d3ae77c26ac8db90639677e4831a728d33c36111
 testImports: []

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -9,6 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/urfave/cli.v2"
+
 	"github.com/wrfly/web-dns/config"
 	"github.com/wrfly/web-dns/dig"
 	"github.com/wrfly/web-dns/dig/cache"
@@ -24,26 +26,104 @@ var (
 
 func main() {
 	conf := config.New()
-	flag.IntVar(&conf.Server.Port, "port", 8080, "server port to listen")
-	flag.IntVar(&conf.Server.DebugPort, "debugport", 8081, "server debug port to listen")
-	flag.StringVar(&dnsStringList, "dns", "8.8.8.8:53,8.8.4.4:53", "dns server")
-	flag.StringVar(&blackStringList, "blacklist", "8.8.8.8", "black list of clients")
-	flag.BoolVar(&conf.Debug, "d", false, "debug switch")
-	flag.IntVar(&timeOut, "t", 100, "dig timeout (millisecond)")
-	flag.IntVar(&conf.Server.Rate, "r", 1000, "rate of requests per minute per IP")
-	flag.StringVar(&conf.Cacher.CacheType, "cache", "mem", "cache type: mem|redis|bolt")
-	flag.StringVar(&conf.Cacher.RedisAddr, "redis", "localhost:6379", "this flag is used for redis cacher")
-	flag.Parse()
+	app := cli.App{
+		Name:    "web-dns",
+		Usage:   "Query domain via HTTP(S)",
+		Version: "0.1",
+		Authors: []*cli.Author{
+			&cli.Author{
+				Name:  "wrfly",
+				Email: "mr.wrfly@gmail.com",
+			},
+		},
+		Flags: []cli.Flag{
+			&cli.IntFlag{
+				Name:        "port",
+				Usage:       "port to listen on",
+				EnvVars:     env_vars("port"),
+				Value:       8080,
+				Destination: &conf.Server.Port,
+			},
+			&cli.StringSliceFlag{
+				Name:    "dns",
+				Usage:   "dns servers",
+				EnvVars: env_vars("dns"),
+				Value:   cli.NewStringSlice("8.8.8.8:53,8.8.4.4:53"),
+			},
+			&cli.IntFlag{
+				Name:    "timeout",
+				Usage:   "dig timeout (millisecond)",
+				EnvVars: env_vars("timeout"),
+				Value:   100,
+			},
+			&cli.IntFlag{
+				Name:        "rate",
+				Usage:       "rate of requests per minute per IP",
+				EnvVars:     env_vars("rate"),
+				Value:       1000,
+				Destination: &conf.Server.Rate,
+			},
+			&cli.StringFlag{
+				Name:        "cache",
+				Usage:       "cache type: mem|redis|bolt",
+				Value:       "mem",
+				EnvVars:     env_vars("cache"),
+				Destination: &conf.Cacher.CacheType,
+			},
+			&cli.StringFlag{
+				Name:        "redis-addr",
+				Usage:       "this flag is used for redis cacher",
+				Value:       "localhost:6379",
+				EnvVars:     env_vars("redis-addr"),
+				Destination: &conf.Cacher.RedisAddr,
+			},
+			&cli.StringSliceFlag{
+				Name:    "black-list",
+				Usage:   "blacklist of clients",
+				EnvVars: env_vars("black-list"),
+				Value:   cli.NewStringSlice("8.8.8.8,4.4.4.4"),
+			},
+			&cli.BoolFlag{
+				Name:        "debug",
+				EnvVars:     env_vars("debug"),
+				Usage:       "debug log-level, metrics and pprof debug",
+				Destination: &conf.Debug,
+			},
+			&cli.IntFlag{
+				Name:        "debug-port",
+				EnvVars:     env_vars("debug-port"),
+				Usage:       "server debug port",
+				Value:       8081,
+				Destination: &conf.Server.DebugPort,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			tot := time.Millisecond * time.Duration(c.Int("timeout"))
+			conf.Digger.Timeout = tot
+			conf.Server.BLK = c.StringSlice("black-list")
+			conf.Digger.DNS = c.StringSlice("dns")
+			if err := run(*conf); err != nil {
+				logrus.Error(err)
+			}
+			return nil
+		},
+	}
+	app.Run(os.Args)
+}
 
-	conf.Server.BLK = strings.Split(blackStringList, ",")
-	conf.Digger.DNS = strings.Split(dnsStringList, ",")
-	conf.Digger.Timeout = time.Millisecond * time.Duration(timeOut)
+func env_vars(n string) []string {
+	return []string{
+		// web dns config
+		fmt.Sprintf("WDC_%s",
+			strings.Replace(strings.ToUpper(n), "-", "_", -1)),
+	}
+}
 
+func run(conf config.Config) error {
 	if conf.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Debug("debug mode")
 	} else {
-		conf.Server.DebugPort = 0
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -60,14 +140,15 @@ func main() {
 	}
 
 	r := route.New(digger, conf.Server)
-	r.Serve()
 
 	sigChan := make(chan os.Signal)
-
 	signal.Notify(sigChan, os.Interrupt)
 
-	<-sigChan
-	logrus.Info("quit")
-
-	return
+	select {
+	case <-sigChan:
+		logrus.Info("quit")
+		return nil
+	case err := <-r.Serve():
+		return err
+	}
 }

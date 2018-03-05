@@ -30,7 +30,7 @@ func New(digger dig.Digger, conf config.ServerConfig) *Router {
 	engine.Use(ratelimitHandler(conf.Rate))
 
 	debug := false
-	if conf.DebugPort > 0 {
+	if gin.Mode() == gin.DebugMode {
 		debug = true
 		registerPrometheus()
 		engine.Use(metricsHandler())
@@ -80,7 +80,7 @@ func (r *Router) jsonResp(c *gin.Context, domain, typ string) {
 	c.JSON(code, answer.Result)
 }
 
-func (r *Router) Serve() {
+func (r *Router) Serve() chan error {
 	logrus.Info("start to serve")
 
 	r.e.GET("/:domain", func(c *gin.Context) {
@@ -116,7 +116,12 @@ func (r *Router) Serve() {
 		c.String(http.StatusOK, usage)
 	})
 
-	r.e.Run(fmt.Sprintf(":%d", r.port)) // listen and serve
+	eChan := make(chan error)
+	go func() {
+		eChan <- r.e.Run(fmt.Sprintf(":%d", r.port))
+	}()
+
+	return eChan
 }
 
 func serveMetricsAndDebug(debugPort int) {
