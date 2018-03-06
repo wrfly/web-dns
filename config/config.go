@@ -25,8 +25,9 @@ type ServerConfig struct {
 }
 
 type DiggerConfig struct {
-	DNS     []string
-	Timeout time.Duration
+	DNS       []string
+	HostsFile string // for hijack
+	Timeout   time.Duration
 }
 
 func New() *Config {

@@ -83,6 +83,13 @@ func main() {
 				EnvVars: env_vars("black-list"),
 				Value:   cli.NewStringSlice("8.8.8.8", "4.4.4.4"),
 			},
+			&cli.StringFlag{
+				Name:        "hosts",
+				Usage:       "hijack hosts file path",
+				Value:       "",
+				EnvVars:     env_vars("hosts"),
+				Destination: &conf.Digger.HostsFile,
+			},
 			&cli.BoolFlag{
 				Name:        "debug",
 				EnvVars:     env_vars("debug"),

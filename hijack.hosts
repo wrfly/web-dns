@@ -1,0 +1,3 @@
+# domain [type] IP
+localhost 127.0.0.1
+kfd.me NS 127.0.0.1

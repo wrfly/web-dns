@@ -39,5 +39,5 @@ curl https://dns.kfd.me/www.google.com
     - [x] blot
 - [x] metrics and debug
 - [x] rate limit(per IP)
-- [ ] hijack
+- [x] hijack
 - [x] api list
