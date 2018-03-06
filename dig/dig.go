@@ -15,6 +15,11 @@ import (
 	"github.com/wrfly/web-dns/lib"
 )
 
+const (
+	domainMaxLen = 64
+	typeMaxLen   = 10
+)
+
 type Digger struct {
 	cacher    cache.Cacher
 	nsserver  []string
@@ -55,6 +60,13 @@ func hostKey(domain, typ string) string {
 
 func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answer) {
 	logrus.Debugf("digger: %s %s", domain, typ)
+
+	// validate
+	if len(domain) > domainMaxLen || len(typ) > typeMaxLen {
+		return lib.Answer{
+			Err: fmt.Errorf("u r kidding me, domain or type toooo long"),
+		}
+	}
 
 	// hijack
 	if d.hijack {
