@@ -9,4 +9,4 @@ build:
 	go build -o $(NAME) .
 
 dev: build
-	./$(NAME) -d
+	./$(NAME) --debug

@@ -70,7 +70,7 @@ func (a Answer) Marshal() []byte {
 	return bs
 }
 
-func Question(dnsserver, domain, typ string) Answer {
+func Question(dnsserver, domain, typ string, timeout time.Duration) Answer {
 	logrus.Debugf("dns: %s, domain: %s, type: %s",
 		dnsserver, domain, typ)
 	if !strings.HasSuffix(domain, ".") {
@@ -94,10 +94,22 @@ func Question(dnsserver, domain, typ string) Answer {
 		return Answer{Err: err}
 	}
 
+	t := time.Now().Add(timeout)
 	u, err := net.Dial("udp", dnsserver)
+	if err := u.SetWriteDeadline(t); err != nil {
+		return Answer{Err: err}
+	}
 	u.Write(buf)
+
 	got := dnsBuf.Get().([]byte)
+	if err := u.SetReadDeadline(t); err != nil {
+		return Answer{Err: err}
+	}
 	n, err := u.Read(got)
+	if err != nil {
+		return Answer{Err: err}
+	}
+
 	u.Close()
 	msg.Unpack(got[:n])
 	dnsBuf.Put(got)

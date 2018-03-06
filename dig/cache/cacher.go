@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 
@@ -26,8 +27,11 @@ type Cacher interface {
 }
 
 func cacheKey(domain, typ string) string {
-	return fmt.Sprintf("%s-%s", domain, typ)
+	k := fmt.Sprintf("%s-%s", domain, typ)
+	r := base64.StdEncoding.EncodeToString([]byte(k))
+	return r
 }
+
 func New(conf config.CacherConfig) (Cacher, error) {
 	logrus.Debugf("new cacher: %s", conf.CacheType)
 	switch conf.CacheType {

@@ -48,13 +48,13 @@ func main() {
 				Name:    "dns",
 				Usage:   "dns servers",
 				EnvVars: env_vars("dns"),
-				Value:   cli.NewStringSlice("8.8.8.8:53,8.8.4.4:53"),
+				Value:   cli.NewStringSlice("8.8.8.8:53", "8.8.4.4:53"),
 			},
 			&cli.IntFlag{
 				Name:    "timeout",
-				Usage:   "dig timeout (millisecond)",
+				Usage:   "dig timeout (second)",
 				EnvVars: env_vars("timeout"),
-				Value:   100,
+				Value:   1,
 			},
 			&cli.IntFlag{
 				Name:        "rate",
@@ -81,7 +81,7 @@ func main() {
 				Name:    "black-list",
 				Usage:   "blacklist of clients",
 				EnvVars: env_vars("black-list"),
-				Value:   cli.NewStringSlice("8.8.8.8,4.4.4.4"),
+				Value:   cli.NewStringSlice("8.8.8.8", "4.4.4.4"),
 			},
 			&cli.BoolFlag{
 				Name:        "debug",
@@ -98,7 +98,7 @@ func main() {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			tot := time.Millisecond * time.Duration(c.Int("timeout"))
+			tot := time.Second * time.Duration(c.Int("timeout"))
 			conf.Digger.Timeout = tot
 			conf.Server.BLK = c.StringSlice("black-list")
 			conf.Digger.DNS = c.StringSlice("dns")

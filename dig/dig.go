@@ -2,6 +2,7 @@ package dig
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -41,10 +42,10 @@ func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answ
 		logrus.Debugf("cacher error: %s", err)
 	}
 
-	first := make(chan lib.Answer, 1)
+	first := make(chan lib.Answer)
 	defer close(first)
 
-	ctx, cancel := context.WithTimeout(ctext, d.timeout)
+	ctx, cancel := context.WithCancel(ctext)
 	defer cancel()
 
 	for _, ns := range d.nsserver {
@@ -55,7 +56,8 @@ func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answ
 					logrus.Errorf("got panic: %s", x)
 				}
 			}()
-			r := lib.Question(ns, domain, typ)
+			// question always return
+			r := lib.Question(ns, domain, typ, d.timeout)
 			logrus.Debugf("%s got ip of %s: %v", ns, domain, r.IPs())
 			if ctx.Err() != nil {
 				logrus.Debug("abort answer")
@@ -65,9 +67,15 @@ func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answ
 		}(ns)
 	}
 
-	ans = <-first
-	if err := d.cacher.Set(domain, typ, ans); err != nil {
-		logrus.Errorf("set cache error: %s", err)
+	select {
+	case ans = <-first:
+		cancel()
+		logrus.Infof("got answer: %v", ans)
+		if err := d.cacher.Set(domain, typ, ans); err != nil {
+			logrus.Errorf("set cache error: %s", err)
+		}
+	case <-ctx.Done():
+		ans = lib.Answer{Err: fmt.Errorf("cancled")}
 	}
 
 	return ans
