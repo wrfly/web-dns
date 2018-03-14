@@ -29,7 +29,7 @@ func main() {
 	app := cli.App{
 		Name:    "web-dns",
 		Usage:   "Query domain via HTTP(S)",
-		Version: "1.0",
+		Version: "1.1",
 		Authors: []*cli.Author{
 			&cli.Author{
 				Name:  "wrfly",
