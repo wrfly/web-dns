@@ -46,23 +46,24 @@ func convertType(typ string) (dns.Type, error) {
 	}
 }
 
-type Resp struct {
-	IP  string `json:"ip"`
-	TTL uint32 `json:"ttl"`
+type Result struct {
+	Host string `json:"host"`
+	Type string `json:"type"`
+	TTL  uint32 `json:"ttl"`
 }
 
 type Answer struct {
-	Result []Resp `json:"result"`
-	DigAt  int64  `json:"dig"`
-	Err    error  `json:"err"`
+	Result []Result `json:"result"`
+	DigAt  int64    `json:"dig"`
+	Err    error    `json:"err"`
 }
 
-func (a Answer) IPs() []string {
-	ips := []string{}
+func (a Answer) Hosts() []string {
+	hosts := []string{}
 	for _, result := range a.Result {
-		ips = append(ips, result.IP)
+		hosts = append(hosts, result.Host)
 	}
-	return ips
+	return hosts
 }
 
 func (a Answer) Marshal() []byte {
@@ -130,34 +131,43 @@ func buildQueryMessage(name dns.Name, typ dns.Type) (msg dns.Message) {
 	return
 }
 
-func parseMessage(msg dns.Message) (resps []Resp, err error) {
-	resps = []Resp{}
-	var ip string
+func parseMessage(msg dns.Message) (results []Result, err error) {
+	results = []Result{}
+	var (
+		host string
+		typ  string
+	)
 	for _, resource := range msg.Answers {
 		h := resource.Header
 		switch h.Type {
 		case dns.TypeA:
 			r := resource.Body.(*dns.AResource)
-			ip = net.IP(r.A[:]).String()
+			host = net.IP(r.A[:]).String()
+			typ = "A"
 		case dns.TypeAAAA:
 			r := resource.Body.(*dns.AAAAResource)
-			ip = net.IP(r.AAAA[:]).String()
+			host = net.IP(r.AAAA[:]).String()
+			typ = "AAAA"
 		case dns.TypeMX:
 			r := resource.Body.(*dns.MXResource)
-			ip = r.MX.String()
+			host = r.MX.String()
+			typ = "MX"
 		case dns.TypeNS:
 			r := resource.Body.(*dns.NSResource)
-			ip = r.NS.String()
+			host = r.NS.String()
+			typ = "NS"
 		case dns.TypeTXT:
 			r := resource.Body.(*dns.TXTResource)
-			ip = r.Txt
+			host = r.Txt
+			typ = "TXT"
 		case dns.TypeCNAME:
 			r := resource.Body.(*dns.CNAMEResource)
-			ip = r.CNAME.String()
+			host = r.CNAME.String()
+			typ = "CNAME"
 		default:
 			return nil, fmt.Errorf("unknown query type")
 		}
-		resps = append(resps, Resp{ip, h.TTL})
+		results = append(results, Result{host, typ, h.TTL})
 	}
 
 	return

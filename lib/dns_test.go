@@ -11,7 +11,7 @@ func printAns(ans Answer) {
 		println(err)
 		return
 	}
-	for _, ip := range ans.IPs() {
+	for _, ip := range ans.Hosts() {
 		println(ip)
 	}
 }

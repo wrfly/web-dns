@@ -51,7 +51,7 @@ func New(conf config.DiggerConfig, cacher cache.Cacher) (Digger, error) {
 
 func (d Digger) Dig(ctext context.Context, domain, typ string) ([]string, error) {
 	answer := d.DigJson(ctext, domain, typ)
-	return answer.IPs(), answer.Err
+	return answer.Hosts(), answer.Err
 }
 
 func hostKey(domain, typ string) string {
@@ -99,7 +99,7 @@ func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answ
 			}()
 			// question always return
 			r := lib.Question(ns, domain, typ, d.timeout)
-			logrus.Debugf("%s got ip of %s: %v", ns, domain, r.IPs())
+			logrus.Debugf("%s got ip of %s: %v", ns, domain, r.Hosts())
 			if ctx.Err() != nil {
 				logrus.Debug("abort answer")
 				return
@@ -122,12 +122,13 @@ func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answ
 	return ans
 }
 
-func simpleAnswer(ip string) lib.Answer {
+func simpleAnswer(ip, typ string) lib.Answer {
 	return lib.Answer{
-		Result: []lib.Resp{
+		Result: []lib.Result{
 			{
-				IP:  ip,
-				TTL: 233,
+				Host: ip,
+				Type: typ,
+				TTL:  233,
 			},
 		},
 	}
@@ -170,7 +171,7 @@ func hostsHandler(r io.ReadCloser) map[string]lib.Answer {
 			hostValid = false
 		}
 		if hostValid {
-			hosts[hostKey(domain, typ)] = simpleAnswer(ip)
+			hosts[hostKey(domain, typ)] = simpleAnswer(ip, typ)
 		}
 	}
 	return hosts

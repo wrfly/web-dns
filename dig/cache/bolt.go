@@ -42,7 +42,7 @@ func (c *boltDBCacher) Get(domain, typ string) (ans lib.Answer, err error) {
 		}
 		// TODO: ugly here
 		ans = lib.Answer{
-			Result: make([]lib.Resp, len(ansGot.Result)),
+			Result: make([]lib.Result, len(ansGot.Result)),
 		}
 		ans.DigAt = ansGot.DigAt
 		copy(ans.Result, ansGot.Result)
