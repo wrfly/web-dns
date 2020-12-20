@@ -1,18 +1,8 @@
 language: go
 go: 
-  - 1.8
-  - 1.9
-
-before_install:
-  # Install Glide
-  - mkdir -p "${GOPATH}/bin"
-  - curl https://glide.sh/get | bash
-
-cache:
-  directories:
-  - vendor
+  - 1.14
+  - 1.15
 
 script:
-  - glide i
   - make test
   - make build
