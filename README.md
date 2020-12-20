@@ -1,5 +1,7 @@
 # Web Dns
 
+**Code base here is very ugly, just can work.**
+
 [![Build Status](https://travis-ci.org/wrfly/web-dns.svg?branch=master)](https://travis-ci.org/wrfly/web-dns)
 
 curl https://dns.kfd.me/www.google.com

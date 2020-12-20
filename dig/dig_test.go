@@ -14,7 +14,7 @@ func TestDig(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	conf := config.DiggerConfig{
 		DNS: []string{
-			"114.114.114.114:53",
+			"1.1.1.1:53",
 			"8.8.8.8:53",
 		},
 		Timeout: time.Second,
@@ -28,43 +28,13 @@ func TestDig(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	t.Run("Type A of kfd.me", func(t *testing.T) {
-		ips, err := digger.Dig(ctx, domain, "A")
-		if err != nil {
-			t.Error(err)
+	for _, typ := range []string{"A", "AAAA", "MX", "NS", "TXT"} {
+		t.Logf("Type %s of kfd.me", typ)
+		r := digger.DigJSON(ctx, domain, "A")
+		if r.Err != nil {
+			t.Error(r.Err)
 		}
-		for _, ip := range ips {
-			t.Log(ip)
-		}
-	})
-	t.Run("Type MX of kfd.me", func(t *testing.T) {
-		ips, err := digger.Dig(ctx, domain, "MX")
-		if err != nil {
-			t.Error(err)
-		}
-		for _, ip := range ips {
-			t.Log(ip)
-		}
-	})
-	t.Run("Type X of kfd.me", func(t *testing.T) {
-		_, err := digger.Dig(ctx, domain, "X")
-		if err.Error() != "type not support" {
-			t.Error(err)
-		}
-	})
+		t.Log(r)
+	}
 
-	t.Run("Json Type A of kfd.me", func(t *testing.T) {
-		r := digger.DigJson(ctx, domain, "A")
-		if r.Err != nil {
-			t.Error(r.Err)
-		}
-		t.Log(r)
-	})
-	t.Run("Json Type MX of kfd.me", func(t *testing.T) {
-		r := digger.DigJson(ctx, domain, "A")
-		if r.Err != nil {
-			t.Error(r.Err)
-		}
-		t.Log(r)
-	})
 }

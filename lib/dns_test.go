@@ -1,46 +1,26 @@
 package lib
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
 
-func printAns(ans Answer) {
-	if err := ans.Err; err != nil {
-		println(err)
-		return
-	}
-	for _, ip := range ans.Hosts() {
-		println(ip)
-	}
-}
 func TestQuery(t *testing.T) {
-	dnsserver := "114.114.114.114:53"
-	domain := "kfd.me"
-	timeout := time.Millisecond * 100
+	for _, typ := range []string{"A", "AAAA", "MX", "NS", "TXT"} {
+		t.Logf("dig kfd.me %s", typ)
+		ans := Question(QueryOption{
+			NSServer: "8.8.8.8:53",
+			Domain:   "kfd.me",
+			Type:     typ,
+			Timeout:  time.Millisecond * 200,
+		})
+		if err := ans.Err; err != nil {
+			t.Errorf("err: %s", err)
+			continue
+		}
+		for _, ip := range ans.Hosts() {
+			t.Logf("IP: %s", ip)
+		}
+	}
 
-	typ := "A"
-	t.Run(fmt.Sprintf("%s %s", domain, typ), func(t *testing.T) {
-		ans := Question(dnsserver, domain, typ, timeout)
-		printAns(ans)
-	})
-
-	typ = "AAAA"
-	t.Run(fmt.Sprintf("%s %s", domain, typ), func(t *testing.T) {
-		ans := Question(dnsserver, domain, typ, timeout)
-		printAns(ans)
-	})
-
-	typ = "MX"
-	t.Run(fmt.Sprintf("%s %s", domain, typ), func(t *testing.T) {
-		ans := Question(dnsserver, domain, typ, timeout)
-		printAns(ans)
-	})
-
-	typ = "TXT"
-	t.Run(fmt.Sprintf("%s %s", domain, typ), func(t *testing.T) {
-		ans := Question(dnsserver, domain, typ, timeout)
-		printAns(ans)
-	})
 }

@@ -7,13 +7,14 @@ import (
 	"net/http/pprof"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
 	"github.com/wrfly/web-dns/config"
 	"github.com/wrfly/web-dns/dig"
 )
 
+// Router object
 type Router struct {
 	port      int
 	debugPort int
@@ -23,6 +24,7 @@ type Router struct {
 	e         *gin.Engine
 }
 
+// New api server
 func New(digger dig.Digger, conf config.ServerConfig) *Router {
 	logrus.Info("create new router")
 	engine := gin.New()
@@ -71,7 +73,7 @@ func (r *Router) stringResp(c *gin.Context, domain, typ string) {
 
 func (r *Router) jsonResp(c *gin.Context, domain, typ string) {
 	logrus.Debugf("dig domain: %s type: %s", domain, typ)
-	answer := r.d.DigJson(c.Request.Context(), domain, typ)
+	answer := r.d.DigJSON(c.Request.Context(), domain, typ)
 	logrus.Debugf("got answer: %v", answer)
 	code := http.StatusOK
 	if answer.Err != nil {
@@ -80,6 +82,7 @@ func (r *Router) jsonResp(c *gin.Context, domain, typ string) {
 	c.JSON(code, answer.Result)
 }
 
+// Serve ...
 func (r *Router) Serve() chan error {
 	logrus.Info("start to serve")
 
@@ -127,7 +130,7 @@ func (r *Router) Serve() chan error {
 func serveMetricsAndDebug(debugPort int) {
 	logrus.Info("start to serve metrics and debug")
 	s := http.NewServeMux()
-	s.Handle("/metrics", prometheus.Handler())
+	s.Handle("/metrics", promhttp.Handler())
 	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		pprof.Index(w, r)
 	})

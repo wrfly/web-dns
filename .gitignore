@@ -19,3 +19,5 @@ web-dns
 *.test
 
 dns.db
+
+vendor/

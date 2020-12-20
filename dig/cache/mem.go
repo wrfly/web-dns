@@ -39,7 +39,6 @@ func (c *memCacher) Get(domain, typ string) (lib.Answer, error) {
 		copy(ans.Result, ansGot.Result)
 		logrus.Debugf("cacher %s get %s=%v", c.n, key, ans)
 		x := uint32(time.Now().Unix() - ans.DigAt)
-		logrus.Debugf("x=%d", x)
 		for i := range ans.Result {
 			if ans.Result[i].TTL >= x {
 				ans.Result[i].TTL -= x

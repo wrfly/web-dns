@@ -20,15 +20,17 @@ const (
 	typeMaxLen   = 10
 )
 
+// Digger ...
 type Digger struct {
 	cacher    cache.Cacher
-	nsserver  []string
+	nsServer  []string
 	blacklist []string
 	timeout   time.Duration
 	hijack    bool
 	hosts     map[string]lib.Answer
 }
 
+// New DNS digger
 func New(conf config.DiggerConfig, cacher cache.Cacher) (Digger, error) {
 	logrus.Info("create new digger")
 	hijack := false
@@ -42,15 +44,16 @@ func New(conf config.DiggerConfig, cacher cache.Cacher) (Digger, error) {
 	}
 	return Digger{
 		cacher:   cacher,
-		nsserver: conf.DNS,
+		nsServer: conf.DNS,
 		timeout:  conf.Timeout,
 		hijack:   hijack,
 		hosts:    hosts,
 	}, nil
 }
 
-func (d Digger) Dig(ctext context.Context, domain, typ string) ([]string, error) {
-	answer := d.DigJson(ctext, domain, typ)
+// Dig ...
+func (d Digger) Dig(ctx context.Context, domain, typ string) ([]string, error) {
+	answer := d.DigJSON(ctx, domain, typ) // filter DNS type
 	return answer.Hosts(), answer.Err
 }
 
@@ -58,7 +61,8 @@ func hostKey(domain, typ string) string {
 	return fmt.Sprintf("%s%s", domain, typ)
 }
 
-func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answer) {
+// DigJSON returns json
+func (d Digger) DigJSON(ctx context.Context, domain, typ string) lib.Answer {
 	logrus.Debugf("digger: %s %s", domain, typ)
 
 	// validate
@@ -75,51 +79,58 @@ func (d Digger) DigJson(ctext context.Context, domain, typ string) (ans lib.Answ
 		}
 	}
 
-	var err error
-	if ans, err = d.cacher.Get(domain, typ); err == nil {
+	if ans, err := d.cacher.Get(domain, typ); err != nil {
+		logrus.Debugf("cacher error: %s", err)
+	} else {
 		logrus.Debugf("return answer: %v", ans)
 		return ans
-	} else {
-		logrus.Debugf("cacher error: %s", err)
 	}
 
 	first := make(chan lib.Answer)
 	defer close(first)
 
-	ctx, cancel := context.WithCancel(ctext)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for _, ns := range d.nsserver {
+	for _, ns := range d.nsServer {
 		go func(ns string) {
-			defer func() {
-				x := recover()
-				if x != nil {
-					logrus.Errorf("got panic: %s", x)
-				}
-			}()
 			// question always return
-			r := lib.Question(ns, domain, typ, d.timeout)
+			r := lib.Question(lib.QueryOption{
+				NSServer: ns,
+				Domain:   domain,
+				Timeout:  d.timeout,
+				Type:     typ,
+			})
 			logrus.Debugf("%s got ip of %s: %v", ns, domain, r.Hosts())
 			if ctx.Err() != nil {
 				logrus.Debug("abort answer")
 				return
 			}
-			first <- r
+			select {
+			case first <- r:
+			default:
+			}
 		}(ns)
 	}
 
+	tm := time.NewTimer(d.timeout)
+	defer tm.Stop()
+
 	select {
-	case ans = <-first:
+	case <-tm.C:
+		return lib.Answer{Err: fmt.Errorf("timeout")}
+
+	case ans := <-first:
 		cancel()
-		logrus.Infof("got answer: %v", ans)
+		logrus.Debugf("got answer: %v", ans)
 		if err := d.cacher.Set(domain, typ, ans); err != nil {
 			logrus.Errorf("set cache error: %s", err)
 		}
-	case <-ctx.Done():
-		ans = lib.Answer{Err: fmt.Errorf("cancled")}
-	}
+		return ans
 
-	return ans
+	case <-ctx.Done():
+		return lib.Answer{Err: fmt.Errorf("cancled")}
+	}
 }
 
 func simpleAnswer(ip, typ string) lib.Answer {
@@ -136,7 +147,7 @@ func simpleAnswer(ip, typ string) lib.Answer {
 
 func hostsHandler(r io.ReadCloser) map[string]lib.Answer {
 	var (
-		lnum   = 0
+		lNum   = 0
 		lines  = bufio.NewReader(r)
 		hosts  = make(map[string]lib.Answer)
 		domain string
@@ -144,7 +155,7 @@ func hostsHandler(r io.ReadCloser) map[string]lib.Answer {
 		ip     string
 	)
 	for {
-		lnum++
+		lNum++
 		s, err := lines.ReadString('\n')
 		if err != nil && s == "" {
 			if err == io.EOF {

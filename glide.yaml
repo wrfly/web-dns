@@ -1,9 +1,0 @@
-package: github.com/wrfly/web-dns
-import:
-- package: github.com/gin-gonic/gin
-  version: ^1.2.0
-- package: github.com/sirupsen/logrus
-  version: ^1.0.4
-- package: golang.org/x/net
-  subpackages:
-  - dns/dnsmessage

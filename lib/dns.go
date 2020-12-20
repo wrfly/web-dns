@@ -46,44 +46,61 @@ func convertType(typ string) (dns.Type, error) {
 	}
 }
 
+// Result ...
 type Result struct {
 	Host string `json:"host"`
 	Type string `json:"type"`
 	TTL  uint32 `json:"ttl"`
+
+	DNSType dns.Type `json:"-"`
 }
 
+// Answer ...
 type Answer struct {
 	Result []Result `json:"result"`
 	DigAt  int64    `json:"dig"`
 	Err    error    `json:"err"`
 }
 
-func (a Answer) Hosts() []string {
+// Hosts ...
+func (a Answer) Hosts(typ ...dns.Type) []string {
 	hosts := []string{}
 	for _, result := range a.Result {
-		hosts = append(hosts, result.Host)
+		if result.DNSType == dns.TypeA {
+			hosts = append(hosts, result.Host)
+		}
 	}
 	return hosts
 }
 
+// Marshal ...
 func (a Answer) Marshal() []byte {
 	bs, _ := json.Marshal(a)
 	return bs
 }
 
-func Question(dnsserver, domain, typ string, timeout time.Duration) Answer {
-	logrus.Debugf("dns: %s, domain: %s, type: %s",
-		dnsserver, domain, typ)
-	if !strings.HasSuffix(domain, ".") {
-		domain += "."
+// QueryOption ...
+type QueryOption struct {
+	NSServer string
+	Domain   string
+	Type     string
+
+	Timeout time.Duration
+}
+
+// Question ...
+func Question(opt QueryOption) Answer {
+	logrus.Debugf("dns: %s, domain: %s, type: %s", opt.NSServer, opt.Domain, opt.Type)
+	if !strings.HasSuffix(opt.Domain, ".") {
+		opt.Domain += "."
 	}
 
 	// type and name
-	dnsType, err := convertType(typ)
+	dnsType, err := convertType(opt.Type)
 	if err != nil {
 		return Answer{Err: err}
 	}
-	dnsName, err := newName(domain)
+	dnsName, err := newName(opt.Domain)
 	if err != nil {
 		return Answer{Err: err}
 	}
@@ -95,15 +112,20 @@ func Question(dnsserver, domain, typ string, timeout time.Duration) Answer {
 		return Answer{Err: err}
 	}
 
-	t := time.Now().Add(timeout)
-	u, err := net.Dial("udp", dnsserver)
-	if err := u.SetWriteDeadline(t); err != nil {
+	u, err := net.Dial("udp", opt.NSServer)
+	if err != nil {
+		return Answer{Err: err}
+	}
+
+	err = u.SetWriteDeadline(time.Now().Add(opt.Timeout))
+	if err != nil {
 		return Answer{Err: err}
 	}
 	u.Write(buf)
 
 	got := dnsBuf.Get().([]byte)
-	if err := u.SetReadDeadline(t); err != nil {
+	err = u.SetReadDeadline(time.Now().Add(opt.Timeout))
+	if err != nil {
 		return Answer{Err: err}
 	}
 	n, err := u.Read(got)
@@ -115,7 +137,7 @@ func Question(dnsserver, domain, typ string, timeout time.Duration) Answer {
 	msg.Unpack(got[:n])
 	dnsBuf.Put(got)
 
-	result, err := parseMessage(msg)
+	result, err := parsednsMessage(msg)
 	if err != nil {
 		return Answer{Err: err}
 	}
@@ -131,44 +153,42 @@ func buildQueryMessage(name dns.Name, typ dns.Type) (msg dns.Message) {
 	return
 }
 
-func parseMessage(msg dns.Message) (results []Result, err error) {
-	results = []Result{}
-	var (
-		host string
-		typ  string
-	)
+func parsednsMessage(msg dns.Message) ([]Result, error) {
+	results := make([]Result, 0)
 	for _, resource := range msg.Answers {
 		h := resource.Header
+		hosts := make([]string, 0)
 		switch h.Type {
 		case dns.TypeA:
 			r := resource.Body.(*dns.AResource)
-			host = net.IP(r.A[:]).String()
-			typ = "A"
+			hosts = append(hosts, net.IP(r.A[:]).String())
 		case dns.TypeAAAA:
 			r := resource.Body.(*dns.AAAAResource)
-			host = net.IP(r.AAAA[:]).String()
-			typ = "AAAA"
+			hosts = append(hosts, net.IP(r.AAAA[:]).String())
 		case dns.TypeMX:
 			r := resource.Body.(*dns.MXResource)
-			host = r.MX.String()
-			typ = "MX"
+			hosts = append(hosts, r.MX.String())
 		case dns.TypeNS:
 			r := resource.Body.(*dns.NSResource)
-			host = r.NS.String()
-			typ = "NS"
+			hosts = append(hosts, r.NS.String())
 		case dns.TypeTXT:
 			r := resource.Body.(*dns.TXTResource)
-			host = r.Txt
-			typ = "TXT"
+			hosts = r.TXT
 		case dns.TypeCNAME:
 			r := resource.Body.(*dns.CNAMEResource)
-			host = r.CNAME.String()
-			typ = "CNAME"
+			hosts = append(hosts, r.CNAME.String())
 		default:
 			return nil, fmt.Errorf("unknown query type")
 		}
-		results = append(results, Result{host, typ, h.TTL})
+		for _, host := range hosts {
+			results = append(results, Result{
+				Host:    host,
+				Type:    strings.TrimPrefix(h.Type.String(), "Type"),
+				TTL:     h.TTL,
+				DNSType: h.Type,
+			})
+		}
 	}
 
-	return
+	return results, nil
 }
