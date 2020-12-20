@@ -10,3 +10,6 @@ build:
 
 dev: build
 	./$(NAME) --debug
+
+docker:
+	docker build -t wrfly/web-dns .

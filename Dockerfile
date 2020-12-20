@@ -1,10 +1,9 @@
-FROM wrfly/glide AS build
-ENV PKG /go/src/github.com/wrfly/web-dns
-COPY . ${PKG}
-RUN cd ${PKG} && \
-    make build && \
-    mv ${PKG}/web-dns /
+FROM golang:alpine AS build
+RUN apk add git
+COPY . /build
+RUN cd /build && \
+    go build -o web-dns .
 
 FROM alpine
-COPY --from=build /web-dns /usr/local/bin/
+COPY --from=build /build/web-dns /usr/local/bin/
 CMD [ "web-dns" ]
