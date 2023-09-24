@@ -22,7 +22,7 @@ var (
 			Namespace: "route",
 			Subsystem: "digger",
 			Name:      "client",
-			Help:      "client queryed",
+			Help:      "client queried",
 		},
 		[]string{
 			"ip",
